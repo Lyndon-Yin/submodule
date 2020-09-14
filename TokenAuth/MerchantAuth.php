@@ -14,9 +14,9 @@ use Lyndon\Logger\Log;
 class MerchantAuth
 {
     // md5('merchant_login')
-    const JWT_KEY = '372c6f09318124dd2daee8eb1fb4acf6';
+    private static $jwt_key = '372c6f09318124dd2daee8eb1fb4acf6';
 
-    const JWT_ALG = 'HS256';
+    private static $jwt_alg = 'HS256';
 
     /**
      * 生成Token
@@ -33,7 +33,7 @@ class MerchantAuth
             'data' => $data
         ];
 
-        return JWT::encode($payload, self::JWT_KEY, self::JWT_ALG);
+        return JWT::encode($payload, self::$jwt_key, self::$jwt_alg);
     }
 
     /**
@@ -46,7 +46,7 @@ class MerchantAuth
     public static function verifyAccessToken($accessToken)
     {
         try {
-            $decoded = JWT::decode($accessToken, self::JWT_KEY, [self::JWT_ALG]);
+            $decoded = JWT::decode($accessToken, self::$jwt_key, [self::$jwt_alg]);
         } catch(\Firebase\JWT\SignatureInvalidException $e) {
             Log::filename('MerchantAuth')->error('MerchantAuth', form_exception_msg($e));
             throw new TokenAuthException('Token签名不合法', CodeType::TOKEN_INVALID);
