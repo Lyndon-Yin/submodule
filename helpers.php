@@ -82,3 +82,142 @@ if (! function_exists('form_int_array')) {
         return $result;
     }
 }
+
+if (! function_exists('parser_search_data')) {
+    /**
+     * 解析$search参数
+     *
+     * 形如：
+     * $search = "name::lyndon;age::18"
+     * 结果：
+     * [
+     *    "name" => "lyndon"
+     *    "age" => "18"
+     * ]
+     *
+     * @param string $search
+     * @return array
+     */
+    function parser_search_data($search)
+    {
+        $result = [];
+
+        if (stripos($search, '::') !== false) {
+            $fields = explode(';', $search);
+
+            foreach ($fields as $row) {
+                if (empty($row)) {
+                    continue;
+                }
+
+                $field_parts = explode('::', $row);
+                if (count($field_parts) !== 2) {
+                    continue;
+                }
+
+                $field_parts[0] = trim($field_parts[0]);
+                $field_parts[1] = trim($field_parts[1]);
+
+                // $field_parts[1]有可能是0这样的empty值
+                if (empty($field_parts[0]) || $field_parts[1] === '') {
+                    continue;
+                }
+
+                $result[$field_parts[0]] = $field_parts[1];
+            }
+        }
+
+        return $result;
+    }
+}
+
+if (! function_exists('parser_order_by')) {
+    /**
+     * 解析$orderBy参数
+     *
+     * 形如：
+     * $orderBy = "age::asc;name::desc"
+     * 结果：
+     * [
+     *    "age" => "asc",
+     *    "name" => "desc"
+     * ]
+     *
+     * @param string $orderBy
+     * @return array
+     */
+    function parser_order_by($orderBy)
+    {
+        $result = [];
+
+        $orderBy = explode(';', $orderBy);
+        foreach ($orderBy as $val) {
+            if (empty($val)) {
+                continue;
+            }
+
+            // 排序字段名称
+            $val = explode('::', $val, 2);
+            if (empty($val[0])) {
+                continue;
+            }
+            $val[0] = trim($val[0]);
+
+            // 排序方向，默认正序
+            if (empty($val[1])) {
+                $sortedBy = 'asc';
+            } else {
+                $sortedBy = strtolower($val[1]);
+                if (! in_array($sortedBy, ['asc', 'desc'])) {
+                    $sortedBy = 'asc';
+                }
+            }
+
+            $result[$val[0]] = $sortedBy;
+        }
+
+        return $result;
+    }
+}
+
+if (! function_exists('format_fields_searchable')) {
+    /**
+     * 格式化可查询条件condition
+     *
+     * 形如：
+     * $fieldsSearchable = [
+     *    'name'  => 'like',
+     *    'birth' => 'between',
+     *    'age'
+     * ]
+     * 改成：
+     * $fieldsSearchable = [
+     *    'name'  => 'like',
+     *    'birth' => 'between',
+     *    'age'   => '='
+     * ]
+     *
+     * @param array $fieldsSearchable
+     * @return array
+     */
+    function format_fields_searchable(array $fieldsSearchable)
+    {
+        $result = [];
+
+        if (empty($fieldsSearchable)) {
+            return $result;
+        }
+
+        foreach ($fieldsSearchable as $field => $condition) {
+            if (is_numeric($field)) {
+                $field = $condition;
+                $condition = '=';
+            }
+
+            $field = trim($field);
+            $result[$field] = strtolower(trim($condition));
+        }
+
+        return $result;
+    }
+}
