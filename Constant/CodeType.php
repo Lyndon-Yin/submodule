@@ -13,15 +13,19 @@ final class CodeType
     const SUCCESS_RETURN = 200;
 
     // token错误
-    const TOKEN_ERROR = 410;
+    const TOKEN_ERROR = 4100;
     // token签名不合法
-    const TOKEN_INVALID = 411;
+    const TOKEN_INVALID = 4110;
     // token签名过期
-    const TOKEN_EXPIRE = 412;
+    const TOKEN_EXPIRE = 4120;
     // token在某个时间之前不可用
-    const TOKEN_BEFORE_NOT = 413;
+    const TOKEN_BEFORE_NOT = 4130;
 
     // 表单验证错误类型
-    const FORM_VALIDATOR_ERROR = 422;
+    const FORM_VALIDATOR_ERROR = 4200;
 
+    // 模型空添加
+    const MODEL_EMPTY_ADD = 4300;
+    // 模型空编辑
+    const MODEL_EMPTY_EDIT = 4310;
 }
