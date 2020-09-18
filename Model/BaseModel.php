@@ -96,16 +96,22 @@ class BaseModel extends Model
      *
      * @param mixed $primaryKey
      * @param array $extraWhere
+     * @param string $trashed -- onlyTrashed / withTrashed
      * @return array
      */
-    public function getRowByPrimaryKey($primaryKey, $extraWhere = [])
+    public function getRowByPrimaryKey($primaryKey, $extraWhere = [], $trashed = '')
     {
         $where = array_merge(
             [$this->primaryKey => $primaryKey],
             $extraWhere
         );
 
-        $info = $this->where($where)->first();
+        $info = $this
+            ->where($where)
+            ->when(! empty($trashed), function ($query) use ($trashed) {
+                return $query->$trashed();
+            })
+            ->first();
 
         return is_null($info) ? [] : $info->toArray();
     }
@@ -115,9 +121,10 @@ class BaseModel extends Model
      *
      * @param mixed $primaryKey
      * @param array $extraWhere
+     * @param string $trashed -- onlyTrashed / withTrashed
      * @return bool
      */
-    public function existsRowByPrimaryKey($primaryKey, $extraWhere = [])
+    public function existsRowByPrimaryKey($primaryKey, $extraWhere = [], $trashed = '')
     {
         $where = array_merge(
             [$this->primaryKey => $primaryKey],
@@ -127,6 +134,9 @@ class BaseModel extends Model
         $info = $this
             ->select($this->primaryKey)
             ->where($where)
+            ->when(! empty($trashed), function ($query) use ($trashed) {
+                return $query->$trashed();
+            })
             ->first();
 
         return ! is_null($info);
@@ -137,9 +147,10 @@ class BaseModel extends Model
      *
      * @param mixed $primaryKeys
      * @param array $extraWhere
+     * @param string $trashed -- onlyTrashed / withTrashed
      * @return array
      */
-    public function getListByPrimaryKeys($primaryKeys, $extraWhere = [])
+    public function getListByPrimaryKeys($primaryKeys, $extraWhere = [], $trashed = '')
     {
         $result = [];
 
@@ -150,6 +161,9 @@ class BaseModel extends Model
                 ->whereIn($this->primaryKey, $chunk)
                 ->when(! empty($extraWhere), function ($query) use ($extraWhere) {
                     return $query->where($extraWhere);
+                })
+                ->when(! empty($trashed), function ($query) use ($trashed) {
+                    return $query->$trashed();
                 })
                 ->get()->toArray();
             $temp = array_column($temp, null, $this->primaryKey);
@@ -170,9 +184,10 @@ class BaseModel extends Model
      *
      * @param mixed $primaryKeys
      * @param array $extraWhere
+     * @param string $deleteMethod
      * @return bool
      */
-    public function destroyByPrimaryKeys($primaryKeys, $extraWhere = [])
+    public function destroyByPrimaryKeys($primaryKeys, $extraWhere = [], $deleteMethod = 'delete')
     {
         $primaryKeys = array_chunk($primaryKeys, 200);
 
@@ -182,7 +197,7 @@ class BaseModel extends Model
                 ->when(! empty($extraWhere), function ($query) use ($extraWhere) {
                     return $query->where($extraWhere);
                 })
-                ->delete();
+                ->$deleteMethod();
         }
 
         return true;
