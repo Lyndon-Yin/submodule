@@ -272,6 +272,17 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     }
 
     /**
+     * 批量添加数据列
+     *
+     * @param array $param
+     * @return mixed
+     */
+    public function batchAddRepoList(array $param)
+    {
+        return $this->model->insert($param);
+    }
+
+    /**
      * 编辑数据行
      *
      * @param mixed $primaryKey
