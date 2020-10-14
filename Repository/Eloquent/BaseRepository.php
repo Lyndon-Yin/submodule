@@ -2,7 +2,7 @@
 namespace Lyndon\Repository\Eloquent;
 
 use Illuminate\Container\Container;
-use Illuminate\Database\Eloquent\Model;
+use Lyndon\Model\BaseModel;
 use Lyndon\Repository\Contracts\CriteriaInterface;
 use Lyndon\Repository\Contracts\RepositoryCriteriaInterface;
 use Lyndon\Repository\Contracts\RepositoryInterface;
@@ -11,11 +11,13 @@ use Lyndon\Exceptions\RepositoryException;
 /**
  * Class BaseRepository
  * @package Lyndon\Repository\Eloquent
+ *
+ * @property BaseModel $model
  */
 abstract class BaseRepository implements RepositoryInterface, RepositoryCriteriaInterface
 {
     /**
-     * @var Model
+     * @var BaseModel
      */
     public $model;
 
@@ -242,7 +244,7 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     abstract public function model();
 
     /**
-     * @return Model|mixed
+     * @return BaseModel|mixed
      * @throws RepositoryException
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
@@ -250,10 +252,88 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     {
         $model = $this->app->make($this->model());
 
-        if (!$model instanceof Model) {
-            throw new RepositoryException("Class {$this->model()} must be an instance of Illuminate\\Database\\Eloquent\\Model");
+        if (!$model instanceof BaseModel) {
+            throw new RepositoryException("Class {$this->model()} must be an instance of Lyndon\\Model\\BaseModel");
         }
 
         return $this->model = $model;
+    }
+
+    /**
+     * 添加数据行
+     *
+     * @param array $param
+     * @return mixed
+     * @throws \Lyndon\Exceptions\ModelException
+     */
+    public function addRepoRow(array $param)
+    {
+        return $this->model->addRow($param);
+    }
+
+    /**
+     * 编辑数据行
+     *
+     * @param mixed $primaryKey
+     * @param array $param
+     * @param array $extraWhere
+     * @return mixed
+     * @throws \Lyndon\Exceptions\ModelException
+     */
+    public function editRepoRow($primaryKey, array $param, array $extraWhere = [])
+    {
+        return $this->model->editRow($primaryKey, $param, $extraWhere);
+    }
+
+    /**
+     * 获取一行数据
+     *
+     * @param mixed $primaryKey
+     * @param array $extraWhere
+     * @param string $trashed -- onlyTrashed / withTrashed
+     * @return array
+     */
+    public function getRepoRowByPrimaryKey($primaryKey, array $extraWhere = [], $trashed = '')
+    {
+        return $this->model->getRowByPrimaryKey($primaryKey, $extraWhere, $trashed);
+    }
+
+    /**
+     * 验证一行数据存在性
+     *
+     * @param mixed $primaryKey
+     * @param array $extraWhere
+     * @param string $trashed -- onlyTrashed / withTrashed
+     * @return bool
+     */
+    public function existsRepoRowByPrimaryKey($primaryKey, array $extraWhere = [], $trashed = '')
+    {
+        return $this->model->existsRowByPrimaryKey($primaryKey, $extraWhere, $trashed);
+    }
+
+    /**
+     * 获取多行数据
+     *
+     * @param array $primaryKeys
+     * @param array $extraWhere
+     * @param string $trashed -- onlyTrashed / withTrashed
+     * @return array
+     */
+    public function getRepoListByPrimaryKeys($primaryKeys, $extraWhere = [], $trashed = '')
+    {
+        return $this->model->getListByPrimaryKeys($primaryKeys, $extraWhere, $trashed);
+    }
+
+    /**
+     * 删除多条数据
+     *
+     * @param array $primaryKeys
+     * @param array $extraWhere
+     * @param string $deleteMethod -- delete / forceDelete
+     * @return bool
+     */
+    public function destroyRepoByPrimaryKeys($primaryKeys, array $extraWhere = [], $deleteMethod = 'delete')
+    {
+        return $this->model->destroyByPrimaryKeys($primaryKeys, $extraWhere, $deleteMethod);
     }
 }
