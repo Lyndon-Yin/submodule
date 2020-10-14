@@ -13,8 +13,7 @@ use Lyndon\Logger\Log;
  */
 class MerchantAuth
 {
-    // md5('merchant_login')
-    private static $jwt_key = '372c6f09318124dd2daee8eb1fb4acf6';
+    private static $jwt_key = '';
 
     private static $jwt_alg = 'HS256';
 
@@ -26,6 +25,8 @@ class MerchantAuth
      */
     public static function createMerchantToken($data)
     {
+        self::initJWTKey();
+
         $payload = [
             // 签发时间
             'iat' => time(),
@@ -45,6 +46,8 @@ class MerchantAuth
      */
     public static function verifyAccessToken($accessToken)
     {
+        self::initJWTKey();
+
         try {
             $decoded = JWT::decode($accessToken, self::$jwt_key, [self::$jwt_alg]);
         } catch(\Firebase\JWT\SignatureInvalidException $e) {
@@ -62,5 +65,22 @@ class MerchantAuth
         }
 
         return $decoded;
+    }
+
+    /**
+     * 初始化jwt加密密码
+     *
+     * @return \Illuminate\Config\Repository|mixed|string
+     */
+    private static function initJWTKey()
+    {
+        if (empty(self::$jwt_key)) {
+            self::$jwt_key = config('JWTAuth.merchantAuth', null);
+            if (empty(self::$jwt_key)) {
+                self::$jwt_key = 'lyndon2merchant';
+            }
+        }
+
+        return self::$jwt_key;
     }
 }
