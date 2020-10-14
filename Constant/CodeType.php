@@ -28,4 +28,7 @@ final class CodeType
     const MODEL_EMPTY_ADD = 4300;
     // 模型空编辑
     const MODEL_EMPTY_EDIT = 4310;
+
+    // 分布式锁竞争失败
+    const DISTRIBUTED_LOCK = 4400;
 }

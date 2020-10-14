@@ -3,6 +3,8 @@ namespace Lyndon\DistributedLock;
 
 
 use Illuminate\Support\Facades\Redis;
+use Lyndon\Constant\CodeType;
+use Lyndon\Exceptions\DistributedLockException;
 
 /**
  * 分布式锁
@@ -40,7 +42,7 @@ trait DistributedLockTait
      * @param string $lockLevel 锁级别，class，module
      * @param int $expired 过期时间，秒
      * @return bool
-     * @throws \Exception
+     * @throws DistributedLockException
      */
     public function addDistributedLock($lockPrefix = 'default', $lockLevel = 'class', $expired = 10)
     {
@@ -91,7 +93,7 @@ trait DistributedLockTait
      *
      * @param int $expired
      * @return bool
-     * @throws \Exception
+     * @throws DistributedLockException
      */
     private function addClassDistributedLock($expired)
     {
@@ -100,7 +102,7 @@ trait DistributedLockTait
 
         /* 验证是否存在module锁 */
         if ($redisObj->exists($redisKey['module'])) {
-            throw new \Exception('稍后再试一下！', 4300);
+            throw new DistributedLockException('稍后再试一下！', CodeType::DISTRIBUTED_LOCK);
         }
 
         /* 尝试添加class锁 */
@@ -114,7 +116,7 @@ trait DistributedLockTait
 
             return true;
         } else {
-            throw new \Exception('稍后再试一下！', 4300);
+            throw new DistributedLockException('稍后再试一下！', CodeType::DISTRIBUTED_LOCK);
         }
     }
 
@@ -140,7 +142,7 @@ trait DistributedLockTait
      *
      * @param int $expired
      * @return bool
-     * @throws \Exception
+     * @throws DistributedLockException
      */
     private function addModuleDistributedLock($expired)
     {
@@ -149,7 +151,7 @@ trait DistributedLockTait
 
         /* 验证是否存在class锁，验证意向锁即可 */
         if ($this->existsIntentionLock('IModule')) {
-            throw new \Exception('稍后再试一下！', 4300);
+            throw new DistributedLockException('稍后再试一下！', CodeType::DISTRIBUTED_LOCK);
         }
 
         /* 尝试加module锁 */
@@ -159,7 +161,7 @@ trait DistributedLockTait
 
             return true;
         } else {
-            throw new \Exception('稍后再试一下！', 4300);
+            throw new DistributedLockException('稍后再试一下！', CodeType::DISTRIBUTED_LOCK);
         }
     }
 
