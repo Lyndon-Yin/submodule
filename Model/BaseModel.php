@@ -13,6 +13,13 @@ use Lyndon\Exceptions\ModelException;
 class BaseModel extends Model
 {
     /**
+     * whereIn查询最大元素数
+     *
+     * @var int
+     */
+    public $maxItemNumForWhereIn = 200;
+
+    /**
      * 数据表字段
      *
      * @var array
@@ -154,7 +161,7 @@ class BaseModel extends Model
     {
         $result = [];
 
-        $primaryKeys = array_chunk($primaryKeys, 200);
+        $primaryKeys = array_chunk($primaryKeys, $this->maxItemNumForWhereIn);
 
         foreach ($primaryKeys as $chunk) {
             $temp = $this
@@ -189,7 +196,7 @@ class BaseModel extends Model
      */
     public function destroyByPrimaryKeys($primaryKeys, $extraWhere = [], $deleteMethod = 'delete')
     {
-        $primaryKeys = array_chunk($primaryKeys, 200);
+        $primaryKeys = array_chunk($primaryKeys, $this->maxItemNumForWhereIn);
 
         foreach ($primaryKeys as $chunk) {
             $this
@@ -239,6 +246,9 @@ class BaseModel extends Model
             case 'float':
             case 'double':
                 $result = 0.00;
+                break;
+            case 'null':
+                $result = null;
                 break;
             case 'string':
             default:
