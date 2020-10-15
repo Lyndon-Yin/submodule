@@ -83,6 +83,34 @@ if (! function_exists('form_int_array')) {
     }
 }
 
+if (! function_exists('array_group')) {
+    /**
+     * 二维数组根据某个字段分组
+     *
+     * @param array $param
+     * @param string $groupKey
+     * @param null $itemKey
+     * @param null $itemValue
+     * @return array
+     */
+    function array_group(array $param, $groupKey, $itemKey = null, $itemValue = null)
+    {
+        $result = [];
+
+        if (is_null($itemKey)) {
+            foreach ($param as $val) {
+                $result[$val[$groupKey]][] = is_null($itemValue) ? $val : $val[$itemValue];
+            }
+        } else {
+            foreach ($param as $val) {
+                $result[$val[$groupKey]][$val[$itemKey]] = is_null($itemValue) ? $val : $val[$itemValue];
+            }
+        }
+
+        return $result;
+    }
+}
+
 if (! function_exists('parser_search_data')) {
     /**
      * 解析$search参数
