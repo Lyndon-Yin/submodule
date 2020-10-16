@@ -58,6 +58,13 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     protected $defaultOrderByFields = [];
 
     /**
+     * 全局范围查询
+     *
+     * @var array
+     */
+    protected $scopeQuery = [];
+
+    /**
      * array of Criteria
      *
      * @var array
@@ -271,6 +278,16 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     }
 
     /**
+     * 追加全局范围查询
+     *
+     * @param $scopeQuery
+     */
+    public function pushScopeQuery($scopeQuery)
+    {
+        $this->scopeQuery = array_merge($this->scopeQuery, $scopeQuery);
+    }
+
+    /**
      * 添加数据行
      *
      * @param array $param
@@ -304,6 +321,8 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
      */
     public function editRepoRow($primaryKey, array $param, array $extraWhere = [])
     {
+        $extraWhere = array_merge($this->scopeQuery, $extraWhere);
+
         return $this->model->editRow($primaryKey, $param, $extraWhere);
     }
 
@@ -317,6 +336,8 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
      */
     public function getRepoRowByPrimaryKey($primaryKey, array $extraWhere = [], $trashed = '')
     {
+        $extraWhere = array_merge($this->scopeQuery, $extraWhere);
+
         return $this->model->getRowByPrimaryKey($primaryKey, $extraWhere, $trashed);
     }
 
@@ -330,6 +351,8 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
      */
     public function existsRepoRowByPrimaryKey($primaryKey, array $extraWhere = [], $trashed = '')
     {
+        $extraWhere = array_merge($this->scopeQuery, $extraWhere);
+
         return $this->model->existsRowByPrimaryKey($primaryKey, $extraWhere, $trashed);
     }
 
@@ -343,6 +366,8 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
      */
     public function getRepoListByPrimaryKeys($primaryKeys, $extraWhere = [], $trashed = '')
     {
+        $extraWhere = array_merge($this->scopeQuery, $extraWhere);
+
         return $this->model->getListByPrimaryKeys($primaryKeys, $extraWhere, $trashed);
     }
 
@@ -356,6 +381,8 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
      */
     public function destroyRepoByPrimaryKeys($primaryKeys, array $extraWhere = [], $deleteMethod = 'delete')
     {
+        $extraWhere = array_merge($this->scopeQuery, $extraWhere);
+
         return $this->model->destroyByPrimaryKeys($primaryKeys, $extraWhere, $deleteMethod);
     }
 
