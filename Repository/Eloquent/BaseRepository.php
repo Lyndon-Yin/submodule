@@ -1,12 +1,15 @@
 <?php
 namespace Lyndon\Repository\Eloquent;
 
-use Illuminate\Container\Container;
+
 use Lyndon\Model\BaseModel;
-use Lyndon\Repository\Contracts\CriteriaInterface;
-use Lyndon\Repository\Contracts\RepositoryCriteriaInterface;
-use Lyndon\Repository\Contracts\RepositoryInterface;
+use Illuminate\Container\Container;
+use Illuminate\Pagination\Paginator;
 use Lyndon\Exceptions\RepositoryException;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Lyndon\Repository\Contracts\CriteriaInterface;
+use Lyndon\Repository\Contracts\RepositoryInterface;
+use Lyndon\Repository\Contracts\RepositoryCriteriaInterface;
 
 /**
  * Class BaseRepository
@@ -27,21 +30,29 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     protected $app;
 
     /**
+     * 标准查询字段
+     *
      * @var array
      */
     protected $fieldSearchable = [];
 
     /**
+     * 标准查询字段别名
+     *
      * @var array
      */
     protected $aliasFieldSearchable = [];
 
     /**
+     * 排序字段别名
+     *
      * @var array
      */
     protected $aliasOrderByFields = [];
 
     /**
+     * 默认排序字段
+     *
      * @var array
      */
     protected $defaultOrderByFields = [];
@@ -346,5 +357,40 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     public function destroyRepoByPrimaryKeys($primaryKeys, array $extraWhere = [], $deleteMethod = 'delete')
     {
         return $this->model->destroyByPrimaryKeys($primaryKeys, $extraWhere, $deleteMethod);
+    }
+
+    /**
+     * 自定义分页，在获取所有主键ID之后进行的分页
+     *
+     * @param array $allDataList
+     * @param $pageSize
+     * @return array
+     */
+    public function selfPaginate($allDataList, $pageSize)
+    {
+        // 数据总条数
+        $total = count($allDataList);
+
+        // 当前页数
+        $currentPage = request()->get('page');
+        $currentPage = empty($currentPage) ? 1 : $currentPage;
+
+        // 每页数据条数
+        $pageSize = (empty($pageSize) || intval($pageSize) < 1) ? 15 : intval($pageSize);
+
+        // 当前页数据列表
+        $items = array_slice($allDataList, ($currentPage - 1) * $pageSize, $pageSize);
+
+        // 获取分页数据
+        $options = [
+            'path' => Paginator::resolveCurrentPath(),
+            'pageName' => 'page'
+        ];
+        $result = new LengthAwarePaginator(
+            $items, $total, $pageSize, $currentPage, $options
+        );
+        $result = $result->appends(request()->input())->toArray();
+
+        return $result;
     }
 }
