@@ -288,6 +288,20 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     }
 
     /**
+     * 当前查询应用范围
+     *
+     * @return $this
+     */
+    public function applyScopeQuery()
+    {
+        if (! empty($this->scopeQuery)) {
+            $this->model = $this->model->where($this->scopeQuery);
+        }
+
+        return $this;
+    }
+
+    /**
      * 添加数据行
      *
      * @param array $param
