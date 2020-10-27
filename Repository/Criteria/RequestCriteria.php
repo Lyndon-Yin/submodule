@@ -1,6 +1,7 @@
 <?php
 namespace Lyndon\Repository\Criteria;
 
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Lyndon\Repository\Contracts\CriteriaInterface;
@@ -454,20 +455,8 @@ class RequestCriteria implements CriteriaInterface
                     $result = [$value];
                 }
 
-                if (! isset($result[0])) {
-                    $result[0] = '';
-                } elseif (strtotime($result[0]) !== false && strpos($result[0], ':') == false) {
-                    $result[0] = trim($result[0]) . ' 00:00:00';
-                } else {
-                    $result[0] = trim($result[0]);
-                }
-                if (! isset($result[1])) {
-                    $result[1] = '';
-                } elseif (strtotime($result[1]) !== false && strpos($result[1], ':') == false) {
-                    $result[1] = trim($result[1]) . ' 23:59:59';
-                } else {
-                    $result[1] = trim($result[1]);
-                }
+                $result[0] = isset($result[0]) ? trim($result[0]) : '';
+                $result[1] = isset($result[1]) ? trim($result[1]) : '';
                 break;
             default:
                 $result = trim($value);
