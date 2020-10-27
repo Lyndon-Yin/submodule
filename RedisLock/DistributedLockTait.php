@@ -1,9 +1,9 @@
 <?php
-namespace Lyndon\DistributedLock;
+namespace Lyndon\RedisLock;
 
 
-use Illuminate\Support\Facades\Redis;
 use Lyndon\Constant\CodeType;
+use Illuminate\Support\Facades\Redis;
 use Lyndon\Exceptions\DistributedLockException;
 
 /**

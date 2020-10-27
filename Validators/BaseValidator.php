@@ -79,9 +79,15 @@ abstract class BaseValidator
      */
     public function passesOrFail($rules)
     {
+        $args = func_get_args();
         if (! is_array($rules)) {
-            $rules = func_get_args();
+            $rules = $args;
+        } elseif (count($args) > 1) {
+            // 排除第一个参数自定义数组的情况
+            // 形如：passesOrFail(['id' => 'required'], 'RuleName');
+            $rules = $args;
         }
+        unset($args);
 
         // 汇总各验证规则
         $validatorRule = [];
