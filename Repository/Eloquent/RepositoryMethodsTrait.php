@@ -7,12 +7,12 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
- * Trait RepositoryCommonMethodsTrait
+ * Trait RepositoryMethodsTrait
  * @package Lyndon\Repository\Eloquent
  *
  * @property BaseModel $model
  */
-trait RepositoryCommonMethodsTrait
+trait RepositoryMethodsTrait
 {
     /**
      * 全局范围查询
