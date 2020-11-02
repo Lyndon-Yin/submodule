@@ -1,6 +1,7 @@
 <?php
 namespace Lyndon\Route;
 
+
 use Illuminate\Http\Request;
 use Illuminate\Container\Container;
 use Lyndon\Exceptions\RouteException;

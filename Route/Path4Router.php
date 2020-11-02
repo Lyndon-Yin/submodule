@@ -14,11 +14,6 @@ class Path4Router
     const TAG = 'Path4Router';
 
     /**
-     * 路由参数个数：包括接口类型
-     */
-    const SEGMENTS_NUM = 4;
-
-    /**
      * @var string Action目录
      */
     public static $actionDir = 'App\\Http\\Controllers';
@@ -80,13 +75,7 @@ class Path4Router
             }
         }
 
-        $segments = self::analyzeUri($segments);
-        $action     = array_pop($segments);
-        $controller = array_pop($segments);
-        $module     = array_pop($segments);
-        $appType    = array_pop($segments);
-
-        return self::actionName($appType, $module, $controller, $action);
+        return self::analyzeUri($segments);
     }
 
     /**
@@ -102,41 +91,10 @@ class Path4Router
     }
 
     /**
-     * 获取Action类名，包括包名
-     *
-     * @param string $appType
-     * @param string $module
-     * @param string $controller
-     * @param string $action
-     * @return string
-     * @throws RouteException
-     */
-    protected static function actionName($appType, $module, $controller, $action)
-    {
-        if (($appType = trim($appType)) === '') {
-            throw new RouteException(self::TAG . ' actionName(), unable to find the requested appType empty.');
-        }
-
-        if (($module = trim($module)) === '') {
-            throw new RouteException(self::TAG . ' actionName(), unable to find the requested module empty.');
-        }
-
-        if (($controller = trim($controller)) === '') {
-            throw new RouteException(self::TAG . ' actionName(), unable to find the requested controller empty.');
-        }
-
-        if (($action = trim($action)) === '') {
-            throw new RouteException(self::TAG . ' actionName(), unable to find the requested action empty.');
-        }
-
-        return self::$actionDir . '\\' . $appType . '\\' . $module . '\\' . $controller . '\\' . $action;
-    }
-
-    /**
      * 分析路由，获取接口类型、Module名、Controller名、Action名
      *
      * @param array $segments
-     * @return array
+     * @return string
      * @throws RouteException
      */
     protected static function analyzeUri($segments)
@@ -145,29 +103,38 @@ class Path4Router
             throw new RouteException(self::TAG . ' analyzeUri(), the requested segments not array.');
         }
 
-        $num = count($segments);
-        if ($num !== self::SEGMENTS_NUM) {
-            throw new RouteException(sprintf(
-                self::TAG . ' analyzeUri(), the requested segments count "%d" wrong, must be "%d".',
-                $num, self::SEGMENTS_NUM
-            ));
+        // 分离出action名称
+        RouterParams::setAction(array_pop($segments));
+        $action = RouterParams::getAction(true);
+        if (empty($action)) {
+            throw new RouteException(self::TAG . ' analyzeUri(), the action can not be empty');
         }
 
-        $appType    = array_shift($segments);
-        $module     = array_shift($segments);
-        $controller = array_shift($segments);
-        $action     = array_shift($segments);
+        $completeActionName = $action;
 
-        RouterParams::setAppType($appType);
-        RouterParams::setModule($module);
-        RouterParams::setController($controller);
-        RouterParams::setAction($action);
+        // 分离出controller名称
+        RouterParams::setController(array_pop($segments));
+        $controller = RouterParams::getController(true);
+        if (empty($controller)) {
+            throw new RouteException(self::TAG . ' analyzeUri(), the controller can not be empty');
+        }
 
-        return [
-            RouterParams::getAppType(true),
-            RouterParams::getModule(true),
-            RouterParams::getController(true),
-            RouterParams::getAction(true)
-        ];
+        $completeActionName = $controller . '\\' . $completeActionName;
+
+        // 分离出module名称
+        RouterParams::setModule(array_pop($segments));
+        $module = RouterParams::getModule(true);
+        if (! empty($module)) {
+            $completeActionName = $module . '\\' . $completeActionName;
+
+            // 分离出appType名称
+            RouterParams::setAppType(array_pop($segments));
+            $appType = RouterParams::getAppType(true);
+            if (! empty($appType)) {
+                $completeActionName = $appType . '\\' . $completeActionName;
+            }
+        }
+
+        return self::$actionDir . '\\' . $completeActionName;
     }
 }

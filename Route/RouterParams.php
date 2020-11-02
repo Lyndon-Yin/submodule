@@ -1,6 +1,7 @@
 <?php
 namespace Lyndon\Route;
 
+
 use Illuminate\Support\Str;
 
 /**
