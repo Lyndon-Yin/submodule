@@ -1,5 +1,10 @@
 <?php
 
+use Firebase\JWT\JWT;
+use Lyndon\Constant\CodeType;
+use Lyndon\Exceptions\TokenAuthException;
+
+
 if (! function_exists('success_return')) {
     /**
      * 返回正确结果
@@ -247,5 +252,61 @@ if (! function_exists('format_fields_searchable')) {
         }
 
         return $result;
+    }
+}
+
+if (! function_exists('create_jwt_token')) {
+    /**
+     * 生成jwt token
+     *
+     * @param array $data
+     * @param string $jwtKey
+     * @param float $expire 过期时间（小时）
+     * @param string $jwtAlg
+     * @return string
+     */
+    function create_jwt_token(array $data, string $jwtKey, float $expire = -1, string $jwtAlg = 'HS256')
+    {
+        $payload = [
+            // 签发时间
+            'iat' => time(),
+            // 自定义信息
+            'data' => $data
+        ];
+
+        // 过期时间追加
+        if ($expire > 0) {
+            $payload['exp'] = time() + $expire * 3600;
+        }
+
+        return JWT::encode($payload, $jwtKey, $jwtAlg);
+    }
+}
+
+if (! function_exists('verify_jwt_token')) {
+    /**
+     * 验证jwt token合法性
+     *
+     * @param string $jwtToken
+     * @param string $jwtKey
+     * @param array $jwtAlg
+     * @return object
+     * @throws TokenAuthException
+     */
+    function verify_jwt_token(string $jwtToken, string $jwtKey, array $jwtAlg = ['HS256'])
+    {
+        try {
+            $decoded = JWT::decode($jwtToken, $jwtKey, $jwtAlg);
+        } catch(\Firebase\JWT\SignatureInvalidException $e) {
+            throw new TokenAuthException('Token签名不合法', CodeType::TOKEN_INVALID);
+        } catch(\Firebase\JWT\BeforeValidException $e) {
+            throw new TokenAuthException('Token签名暂不可用', CodeType::TOKEN_BEFORE_NOT);
+        } catch(\Firebase\JWT\ExpiredException $e) {
+            throw new TokenAuthException('Token签名过期', CodeType::TOKEN_EXPIRE);
+        } catch(\Exception $e) {
+            throw new TokenAuthException('Token签名错误', CodeType::TOKEN_ERROR);
+        }
+
+        return $decoded;
     }
 }
