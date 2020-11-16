@@ -5,6 +5,7 @@ namespace Lyndon\CurlApi;
 use Curl\Curl;
 use Lyndon\Logger\Log;
 use Lyndon\PublicDB\Actions\AppServiceAction;
+use Psr\SimpleCache\InvalidArgumentException;
 
 /**
  * Class BaseCurlApi
@@ -129,6 +130,7 @@ abstract class BaseCurlApi
     protected function initHeaders()
     {
         $this->headers = [
+            'Trace-Id'     => get_trace_id(),
             'Referer-Name' => env('APP_NAME'),
             'Referer'      => env('APP_URL')
         ];
@@ -148,7 +150,11 @@ abstract class BaseCurlApi
             }
 
             // 根据业务名称获取业务地址
-            $info = AppServiceAction::getAppInfo($this->arriveName, env('APP_ENV'));
+            try {
+                $info = AppServiceAction::getAppInfo($this->arriveName, env('APP_ENV'));
+            } catch (InvalidArgumentException $e) {
+                throw new \Exception('协助异常：' . $e->getMessage(), $e->getCode());
+            }
             if (empty($info['app_url'])) {
                 throw new \Exception('协助异常：未找到访问应用地址');
             }
