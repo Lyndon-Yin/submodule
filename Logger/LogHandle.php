@@ -62,6 +62,7 @@ class LogHandle
                 'hostname' => gethostname(),
                 'pid'      => getmypid(),
                 'app_name' => env('APP_NAME'),
+                'trace_id' => get_trace_id(),
             ];
         }
     }

@@ -49,6 +49,26 @@ if (! function_exists('error_return')) {
     }
 }
 
+if (! function_exists('get_trace_id')) {
+    /**
+     * 获取trace_id，主要用于日志追踪
+     *
+     * @return string
+     */
+    function get_trace_id()
+    {
+        static $traceId;
+
+        if (empty($traceId)) {
+            $traceId = (string)\Illuminate\Support\Str::uuid();
+
+            $traceId = strtoupper(str_replace('-', '', $traceId));
+        }
+
+        return $traceId;
+    }
+}
+
 if (! function_exists('form_exception_msg')) {
     /**
      * 格式化异常通知
