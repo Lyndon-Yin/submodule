@@ -86,9 +86,13 @@ if (! function_exists('get_trace_id')) {
         static $traceId;
 
         if (empty($traceId)) {
-            $traceId = (string)\Illuminate\Support\Str::uuid();
+            // 优先从header头取trace_id，这样跨服务请求会有同一个trace_id
+            $traceId = request()->header('Trace-Id', null);
+            if (is_null($traceId)) {
+                $traceId = (string)\Illuminate\Support\Str::uuid();
 
-            $traceId = strtoupper(str_replace('-', '', $traceId));
+                $traceId = strtoupper(str_replace('-', '', $traceId));
+            }
         }
 
         return $traceId;
