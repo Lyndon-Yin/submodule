@@ -171,6 +171,8 @@ abstract class BaseCurlApi
      */
     protected function initHeaders()
     {
+        $currentTime = time();
+
         // 生成访问令牌
         if (empty($this->arriveInfo['app_key'])) {
             throw new \Exception('协助异常：请求令牌错误');
@@ -178,6 +180,7 @@ abstract class BaseCurlApi
         $data = [
             'arrive_key'  => $this->arriveInfo['app_key'],
             'arrive_name' => $this->arriveName,
+            'timestamp'   => $currentTime,
             'from_name'   => env('APP_NAME')
         ];
         $sign = make_sign_key($data);
@@ -186,6 +189,7 @@ abstract class BaseCurlApi
             'Trace-Id'     => get_trace_id(),
             'Referer-Name' => env('APP_NAME'),
             'Referer'      => env('APP_URL'),
+            'Request-Time' => $currentTime,
             'Sign-Key'     => $sign
         ];
     }
