@@ -49,6 +49,32 @@ if (! function_exists('error_return')) {
     }
 }
 
+if (! function_exists('make_sign_key')) {
+    /**
+     * 生成跨服务请求签名
+     *
+     * @param array $param
+     * @return string
+     */
+    function make_sign_key(array $param)
+    {
+        ksort($param);
+
+        $sign = [];
+        foreach ($param as $key => $val) {
+            if (empty($val)) {
+                continue;
+            } elseif (is_array($val)) {
+                $val = json_encode($val);
+            }
+
+            $sign[] = md5($key . '=' . $val);
+        }
+
+        return strtoupper(md5(implode('&', $sign)));
+    }
+}
+
 if (! function_exists('get_trace_id')) {
     /**
      * 获取trace_id，主要用于日志追踪

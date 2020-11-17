@@ -21,18 +21,49 @@ abstract class BaseCurlApi
     protected $arriveName = '';
 
     /**
-     * 访问应用的URL地址
+     * 访问应用的信息列表
      *
-     * @var string
+     * @var array
      */
-    protected $arriveUrl = '';
+    private $arriveInfo = [];
 
     /**
      * 访问header头列表
      *
      * @var array
      */
-    protected $headers = [];
+    private $headers = [];
+
+    /**
+     * 当前对象实例
+     *
+     * @var null
+     */
+    private static $instance = null;
+
+    /**
+     * BaseCurlApi constructor.
+     * @throws \Exception
+     */
+    private function __construct()
+    {
+        $this->initArriveAppInfo();
+    }
+
+    /**
+     * 获取当前对象
+     *
+     * @return null
+     * @throws \Exception
+     */
+    public static function getInstance()
+    {
+        if (is_null(self::$instance)) {
+            self::$instance = new static();
+        }
+
+        return self::$instance;
+    }
 
     /**
      * POST请求
@@ -80,15 +111,14 @@ abstract class BaseCurlApi
      */
     protected function curl($url, $data, $method = 'get')
     {
-        // 初始化访问应用url地址
         try {
+            // 初始化访问应用url地址
             $url = $this->initUrl($url);
+            // 初始化访问头
+            $this->initHeaders();
         } catch (\Exception $e) {
             return error_return($e->getMessage());
         }
-
-        // 初始化访问头
-        $this->initHeaders();
 
         $curl = new Curl();
         // 设置头信息
@@ -99,7 +129,13 @@ abstract class BaseCurlApi
         $result = $curl->$method($url, $data);
 
         if ($curl->error_code) {
-            Log::filename('BaseCurlApi')->error('BaseCurlApi', ['msg' => $curl->error_message, 'url' => $url, 'data' => $data, 'method' => $method]);
+            Log::filename('BaseCurlApi')->error('BaseCurlApi', [
+                'msg'    => $curl->error_message,
+                'url'    => $url,
+                'data'   => $data,
+                'method' => $method,
+                'header' => $this->headers
+            ]);
             return error_return('协助异常：' . $curl->error_message, $curl->error_code);
         }
 
@@ -121,47 +157,60 @@ abstract class BaseCurlApi
      */
     protected function initUrl($url)
     {
-        return $this->getArriveUrl() . trim($url, '\\/');
+        if (empty($this->arriveInfo['app_url'])) {
+            throw new \Exception('协助异常：未找到访问应用地址');
+        }
+
+        return $this->arriveInfo['app_url'] . '/' . trim($url, '\\/');
     }
 
     /**
      * 初始化访问头信息
+     *
+     * @throws \Exception
      */
     protected function initHeaders()
     {
+        // 生成访问令牌
+        if (empty($this->arriveInfo['app_key'])) {
+            throw new \Exception('协助异常：请求令牌错误');
+        }
+        $data = [
+            'arrive_key'  => $this->arriveInfo['app_key'],
+            'arrive_name' => $this->arriveName,
+            'from_name'   => env('APP_NAME')
+        ];
+        $sign = make_sign_key($data);
+
         $this->headers = [
             'Trace-Id'     => get_trace_id(),
             'Referer-Name' => env('APP_NAME'),
-            'Referer'      => env('APP_URL')
+            'Referer'      => env('APP_URL'),
+            'Sign-Key'     => $sign
         ];
     }
 
     /**
-     * 获取访问应用的URL地址
+     * 获取访问应用信息
      *
-     * @return string
      * @throws \Exception
      */
-    protected function getArriveUrl()
+    protected function initArriveAppInfo()
     {
-        if (empty($this->arriveUrl)) {
-            if (empty($this->arriveName)) {
-                throw new \Exception('协助异常：访问应用名称不能为空');
-            }
-
-            // 根据业务名称获取业务地址
-            try {
-                $info = AppServiceAction::getAppInfo($this->arriveName, env('APP_ENV'));
-            } catch (InvalidArgumentException $e) {
-                throw new \Exception('协助异常：' . $e->getMessage(), $e->getCode());
-            }
-            if (empty($info['app_url'])) {
-                throw new \Exception('协助异常：未找到访问应用地址');
-            }
-
-            $this->arriveUrl = trim($info['app_url'], '\\/') . '/';
+        if (empty($this->arriveName)) {
+            throw new \Exception('协助异常：访问应用名称不能为空');
         }
 
-        return $this->arriveUrl;
+        // 根据业务名称获取业务信息
+        try {
+            $info = AppServiceAction::getAppInfo($this->arriveName, env('APP_ENV'));
+        } catch (InvalidArgumentException $e) {
+            throw new \Exception('协助异常：' . $e->getMessage(), $e->getCode());
+        }
+
+        $this->arriveInfo = [
+            'app_url' => trim($info['app_url'], '\\/'),
+            'app_key' => $info['app_key'],
+        ];
     }
 }
