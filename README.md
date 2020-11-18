@@ -1,7 +1,17 @@
 # 子模块
-1，需要更改/config/database.php文件，connections中添加public-mysql公共数据库配置信息
+1，composer require curl/curl ^2.3
+
+2，需要更改/config/database.php文件，connections中添加public-mysql公共数据库配置信息
+
+3，需要更改/config/database.php文件，redis中添加distributedLock分布式锁配置信息
+
+4，需要更改/config/database.php文件，redis中添加optimisticLock分布式锁配置信息
+
+5，composer require firebase/php-jwt ^5.2
 
 ## 跨服务接口调用
+
+依赖curl/curl三方库
 
 首先在/config/database.php文件connections中添加public-mysql公共数据库配置信息
 
@@ -145,8 +155,16 @@ $this->destroyByPrimaryKeys($primaryKeys, $extraWhere = [], $deleteMethod = 'del
 
 ## 锁
 
-## repository仓库
+#### 分布式锁
+基于redis的分布式锁，所以需要支持redis
 
-## token验证
+首先在/config/database.php文件redis中添加distributedLock分布式锁配置信息
+
+#### 乐观锁
+基于redis的乐观锁，所以需要支持redis
+
+首先在/config/database.php文件redis中添加optimisticLock分布式锁配置信息
+
+## repository仓库
 
 ## 表单验证
