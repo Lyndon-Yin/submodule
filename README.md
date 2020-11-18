@@ -1,6 +1,72 @@
 # 子模块
+1，需要更改/config/database.php文件，connections中添加public-mysql公共数据库配置信息
+
+## 跨服务接口调用
+
+首先在/config/database.php文件connections中添加public-mysql公共数据库配置信息
+
+使用方法：  
+1，创建一个继承\Lyndon\CurlApi\BaseCurlApi的类，例如GoodsApi  
+2，必填参数参数$arriveName，表示你需要调用的应用服务名称  
+3，实例化创建的api类，$apiObj = GoodsApi::getInstance();  
+```php
+class GoodsApi extends \Lyndon\CurlApi\BaseCurlApi
+{
+    protected $arriveName = 'goods';
+}
+```
+\Lyndon\CurlApi\BaseCurlApi中有get，post，delete等请求方法  
+```php
+/**
+ * 第一个参数，接口地址（不需要传域名）
+ * 第二个参数，接口参数（数组形式）
+ */
+$apiObj->get('shop-goods/goods/goods-info', ['goods_id' => 1]);
+$apiObj->post('shop-goods/goods/goods-add', ['goods_name' => '商品名称', 'sell_price' => '499']);
+$apiObj->delete('shop-goods/goods/goods-destroy', ['goods_ids' => [1,2,3]]);
+```
+
+也可以进行二次封装（强烈推荐用法）
+```php
+class GoodsApi extends \Lyndon\CurlApi\BaseCurlApi
+{
+    protected $arriveName = 'goods';
+
+    /**
+     * 获取商品详解接口
+     *
+     * @param array $param
+     * @return mixed
+     */
+    public function getGoodsInfo($param)
+    {
+       return $this->get('shop-goods/goods/goods-info', $param)
+    }
+}
+```
+然后如上实例化对象：$apiObj = GoodsApi::getInstance()，再进行自定义方法调用$apiObj->getGoodsInfo(['goods_id' => 1])。这样可以实现接口复用。
+
+一般同一个应用服务的接口调用写在一个类中（如果接口调用很多，可以拆分成多个类，也是没有问题的），这样，每个应用服务的调用就会有至少一个类。
 
 ## 日志
+
+此日志记录采用的是文件形式，存储位置为/storage/logs/*.log
+
+```php
+use Lyndon\Log;
+
+/**
+ * 一共4种级别的日志记录，分别是info，notice，warning，error
+ * 使用时需要根据具体情况选择
+ *
+ * filename()的参数是文件名称，实际的文件名称会加上日志级别，如file1-info，file4-error
+ * info()，notice()，warning()，error()第一个参数是日志搜索的关键字，第二个参数$data可以是数组或字符串类型
+ */
+Log::filename('file1')->info('search message', $array);
+Log::filename('file2')->notice('search message', $array);
+Log::filename('file3')->warning('search message', $array);
+Log::filename('file4')->error('search message', $array);
+```
 
 ## 模型
 
