@@ -1,5 +1,6 @@
 <?php
 
+use Lyndon\HashIds;
 use Firebase\JWT\JWT;
 use Lyndon\Constant\CodeType;
 use Lyndon\Exceptions\TokenAuthException;
@@ -46,6 +47,32 @@ if (! function_exists('error_return')) {
         ];
 
         return $result;
+    }
+}
+
+if (! function_exists('hash_ids_encode')) {
+    /**
+     * \Hashids\Hashids加密
+     *
+     * @param mixed ...$numbers
+     * @return string
+     */
+    function hash_ids_encode(...$numbers)
+    {
+        return HashIds::encode(...$numbers);
+    }
+}
+
+if (! function_exists('hash_ids_decode')) {
+    /**
+     * \Hashids\Hashids解密
+     *
+     * @param string $hash
+     * @return array
+     */
+    function hash_ids_decode(string $hash)
+    {
+        return HashIds::decode($hash);
     }
 }
 
