@@ -76,6 +76,28 @@ if (! function_exists('hash_ids_decode')) {
     }
 }
 
+if (! function_exists('hash_ids_decode_batch')) {
+    /**
+     * \Hashids\Hashids解密（批量）
+     *
+     * @param array $hashArray
+     * @return array
+     */
+    function hash_ids_decode_batch(array $hashArray)
+    {
+        $results = [];
+
+        foreach ($hashArray as $hash) {
+            $temp = HashIds::decode($hash);
+            if (! empty($temp)) {
+                $results[] = current($temp);
+            }
+        }
+
+        return $results;
+    }
+}
+
 if (! function_exists('make_sign_key')) {
     /**
      * 生成跨服务请求签名
