@@ -23,6 +23,13 @@ interface RepositoryInterface
     public function getAliasFieldsSearchable();
 
     /**
+     * 获取可搜索字段的类型转换
+     *
+     * @return mixed
+     */
+    public function getFieldSearchableCast();
+
+    /**
      * 获取排序字段的别名
      *
      * @return array

@@ -44,6 +44,13 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     protected $aliasFieldSearchable = [];
 
     /**
+     * 标准查询铸模
+     *
+     * @var array
+     */
+    protected $fieldSearchableCast = [];
+
+    /**
      * 排序字段别名
      *
      * @var array
@@ -216,6 +223,16 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     public function getAliasFieldsSearchable()
     {
         return $this->aliasFieldSearchable;
+    }
+
+    /**
+     * 获取可搜索字段的类型转换
+     *
+     * @return array|mixed
+     */
+    public function getFieldSearchableCast()
+    {
+        return $this->fieldSearchableCast;
     }
 
     /**

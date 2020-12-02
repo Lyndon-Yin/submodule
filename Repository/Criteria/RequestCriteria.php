@@ -68,7 +68,6 @@ class RequestCriteria implements CriteriaInterface
     protected function addWhere()
     {
         $fieldsSearchable = $this->repository->getFieldsSearchable();
-        $aliasFieldSearchable = $this->repository->getAliasFieldsSearchable();
 
         $search       = $this->request->get('search', null);
         $searchFields = $this->request->get('searchFields', null);
@@ -77,13 +76,16 @@ class RequestCriteria implements CriteriaInterface
         if (! empty($search) && is_array($fieldsSearchable) && ! empty($fieldsSearchable)) {
             $fieldsSearchable = format_fields_searchable($fieldsSearchable);
 
-            $search       = $this->parserSearchData($search, $fieldsSearchable, $aliasFieldSearchable);
-            $searchFields = $this->parserSearchFields($searchFields, $fieldsSearchable, $aliasFieldSearchable);
+            $search       = $this->parserSearchData($search, $fieldsSearchable);
+            $searchFields = $this->parserSearchFields($searchFields, $fieldsSearchable);
 
             $modelForceAndWhere = strtolower($searchJoin) !== 'or';
             $isFirstField       = true;
 
-            $this->model = $this->model->where(function ($query) use ($search, $searchFields, $modelForceAndWhere, $isFirstField) {
+            // 搜索字段铸模函数
+            $fieldSearchableCast = $this->repository->getFieldSearchableCast();
+
+            $this->model = $this->model->where(function ($query) use ($search, $searchFields, $modelForceAndWhere, $isFirstField, $fieldSearchableCast) {
                 // 链表查询的where条件集合
                 $relationWhere = [];
 
@@ -92,6 +94,9 @@ class RequestCriteria implements CriteriaInterface
                         continue;
                     }
                     $searchValue = $search[$field];
+
+                    // 搜索字段进行类型转换（铸模）
+                    $closureName = isset($fieldSearchableCast[$field]) ? $fieldSearchableCast[$field] : '';
 
                     // 分离出链表查询字段
                     if (strpos($field, '.') === false) {
@@ -103,7 +108,7 @@ class RequestCriteria implements CriteriaInterface
                         $relationTable = implode('.', $explode);
                     }
 
-                    $searchValue = $this->parserWhereValue($searchValue, $condition);
+                    $searchValue = $this->parserWhereValue($searchValue, $condition, $closureName);
                     if ($searchValue === '') {
                         continue;
                     }
@@ -292,15 +297,17 @@ class RequestCriteria implements CriteriaInterface
      *
      * @param mixed $search
      * @param array $fieldsSearchable
-     * @param array $aliasFieldSearchable
      * @return array
      */
-    protected function parserSearchData($search, array $fieldsSearchable = [], array $aliasFieldSearchable = [])
+    protected function parserSearchData($search, array $fieldsSearchable = [])
     {
         $result = [];
 
         // 前端传参字符串转换为数组形式
         $search = parser_search_data($search);
+
+        // 搜索字段别名
+        $aliasFieldSearchable = $this->repository->getAliasFieldsSearchable();
 
         // 过滤非法参数
         foreach ($search as $field => $value) {
@@ -331,12 +338,14 @@ class RequestCriteria implements CriteriaInterface
      *
      * @param mixed $searchFields
      * @param array $fieldsSearchable
-     * @param array $aliasFieldSearchable
      * @return array
      */
-    protected function parserSearchFields($searchFields, array $fieldsSearchable = [], array $aliasFieldSearchable = [])
+    protected function parserSearchFields($searchFields, array $fieldsSearchable = [])
     {
         $searchFields = (is_array($searchFields) || is_null($searchFields)) ? $searchFields : explode(';', $searchFields);
+
+        // 搜索字段别名映射
+        $aliasFieldSearchable = $this->repository->getAliasFieldsSearchable();
 
         // 用户自定义的搜索条件替换默认搜索条件
         if (! empty($searchFields)) {
@@ -427,9 +436,10 @@ class RequestCriteria implements CriteriaInterface
      *
      * @param $value
      * @param $condition
+     * @param string $closureName
      * @return array|string
      */
-    protected function parserWhereValue($value, $condition)
+    protected function parserWhereValue($value, $condition, $closureName = '')
     {
         $result = '';
 
@@ -442,11 +452,29 @@ class RequestCriteria implements CriteriaInterface
             case 'in':
             case 'notin':
                 $result = explode(',', $value);
+
+                // 参数进行类型转换
+                if (! empty($closureName)) {
+                    foreach ($result as &$val) {
+                        $val = $closureName($val);
+                    }
+                    unset($val);
+                }
                 break;
             case 'like':
+                // 参数进行类型转换
+                if (! empty($closureName)) {
+                    $value = $closureName($value);
+                }
+
                 $result = '%' . $value . '%';
                 break;
             case 'between':
+                // 参数进行类型转换
+                if (! empty($closureName)) {
+                    $value = $closureName($value);
+                }
+
                 if (strpos($value, '~') !== false) {
                     $result = explode('~', $value, 2);
                 } elseif (strpos($value, ',') !== false) {
@@ -460,6 +488,11 @@ class RequestCriteria implements CriteriaInterface
                 break;
             default:
                 $result = trim($value);
+
+                // 参数进行类型转换
+                if (! empty($closureName)) {
+                    $result = $closureName($result);
+                }
         }
 
         return $result;
