@@ -68,11 +68,11 @@ if (! function_exists('hash_ids_decode')) {
      * \Hashids\Hashids解密
      *
      * @param string $hash
-     * @return array
+     * @return int
      */
     function hash_ids_decode(string $hash)
     {
-        return HashIds::decode($hash);
+        return current(HashIds::decode($hash));
     }
 }
 
