@@ -22,6 +22,7 @@ if (! function_exists('success_return')) {
             'code'    => $code,
             'message' => $message,
             'data'    => $data,
+            'trace'   => get_trace_id()
         ];
 
         return $result;
@@ -44,6 +45,7 @@ if (! function_exists('error_return')) {
             'code'    => $code,
             'message' => $message,
             'data'    => $data,
+            'trace'   => get_trace_id()
         ];
 
         return $result;
