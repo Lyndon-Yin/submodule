@@ -412,3 +412,113 @@ class DemoClass
     }
 }
 ```
+
+## Laravel路由
+
+基于Laravel的通用路由解析。只写一次，再也不用每次添加接口都要改动routes/api.php或者routes/web.php了。
+目录即访问地址，并且目录层级灵活多变。
+
+### 使用简介
+
+首先routes/api.php或者routes/web.php添加以下代码：
+```php
+use Illuminate\Http\Request;
+
+Route::group([
+    'middleware' => [
+        // 中间件列表
+    ]
+], function ($router) {
+    $router->any('{slug?}', function (Request $request) {
+        return \Lyndon\Route\Action\Path4Router::route($request);
+    })->where('slug', '(.*)?');
+});
+```
+
+注意：  
+App\Providers\RouteServiceProvider文件中，对于api和web有各自的路由支持，分别是mapWebRoutes()和mapApiRoutes()方法。
+这两个方法中的prefix()中的'web'和'api'，或者其他自定义的前缀prefix，是上述静态方法\Lyndon\Route\Action\Path4Router::route($request)的第二个参数。
+
+例如，若在routes/api.php文件中，且mapApiRoutes()中有prefix('api')，则：
+```php
+use Illuminate\Http\Request;
+
+Route::group([
+    'middleware' => [
+        // 中间件列表
+    ]
+], function ($router) {
+    $router->any('{slug?}', function (Request $request) {
+        return \Lyndon\Route\Action\Path4Router::route($request, 'api');
+    })->where('slug', '(.*)?');
+});
+```
+
+然后在app/Http/Controllers中添加如下目录结构：
+```
+AppType1
+├── Module1
+│   ├── Controller2
+│   │   ├── Action1.php
+│   │   ├── Action2.php
+│   │   └── Action3.php
+│   └── Controller2
+├── Module2
+AppType2
+├── Module1
+    ├── Controller1
+    │   ├── Action1.php
+    │   └── Action2.php
+    └── Controller2
+```
+AppType，Module，Controller均为目录，Action为Class类，其中onRun()方法是具体执行方法。
+
+AppType：接口类型，例如Admin（商家端），Client（用户端）等  
+Module：模块，例如Goods（商品模块），Marketing（营销模块）等  
+Controller：控制器，例如Brand（品牌控制），Stock（库存控制）等  
+Action：方法，例如BrandList（品牌列表方法），BrandCreate（品牌添加方法）等  
+
+
+注意：  
+以上是最大支持的目录层级，共4层，但不表示只支持4层目录结构，当前路由最小支持2层目录结构，仅剩下Controller和Action。
+也可以是三层，Module，Controller和Action。更加灵活多变。
+
+接着在app/Http/Controllers中添加一个Brand文件夹，该文件夹下创建一个BrandList.php文件，文件内容如下：
+```php
+namespace App\Http\Controllers\Brand;
+
+
+use Illuminate\Http\Request;
+use Lyndon\Route\Action\AbstractAction;
+
+class BrandList extends AbstractAction
+{
+    public function allowMethod()
+    {
+        return self::METHOD_GET;
+    }
+
+    public function onRun(Request $request)
+    {
+        return 'brandList';
+    }
+}
+```
+此时通过地址：http://localhost/brand/brand-list即可访问该方法了。如果是api访问的话，地址可能是：http://localhost/api/brand/brand-list。
+这是最简单的2层目录，同样你可以在Brand文件夹外再套一层，例如ShopGoods，此时上述类的namespace变为App\Http\Controllers\ShopGoods\Brand
+访问地址也就变成：http://localhost/shop-goods/brand/brand-list。
+
+### config配置
+默认路由根目录是App\\Http\\Controllers，可以通过一下配置，更改路由根目录
+
+app/config目录下添加LyndonRoute.php配置文件：
+```php
+return [
+    /*
+     * 路由解析根目录，默认是App\Http\Controllers
+     * 在这目录下可以创建appType，Module，Controller等目录
+     */
+    'actionDir' => 'App\\Http\\Controllers',
+];
+```
+
