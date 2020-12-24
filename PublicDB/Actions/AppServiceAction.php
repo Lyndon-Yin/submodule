@@ -2,6 +2,7 @@
 namespace Lyndon\PublicDB\Actions;
 
 
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Cache;
 use Lyndon\PublicDB\Models\AppServiceModel;
 
@@ -11,6 +12,11 @@ use Lyndon\PublicDB\Models\AppServiceModel;
  */
 class AppServiceAction
 {
+    /**
+     * @var null 公共redis对象
+     */
+    private static $publicRedis = null;
+
     /**
      * 获取应用服务信息
      *
@@ -30,7 +36,7 @@ class AppServiceAction
         }
 
         // 从redis缓存中获取
-        $results = Cache::store('redis')->get($cacheKey, null);
+        $results = self::getRedisCache($cacheKey);
         if (! is_null($results)) {
             // 数据加入file缓存中，过期时间为10分钟
             Cache::store('file')->put($cacheKey, $results, 600);
@@ -47,8 +53,8 @@ class AppServiceAction
 
         // 数据加入file缓存中，过期时间为10分钟
         Cache::store('file')->put($cacheKey, $results, 600);
-        // 数据加入redis缓存，过期时间为100天
-        Cache::store('redis')->put($cacheKey, $results, 8640000);
+        // 数据加入redis缓存
+        self::setRedisCache($cacheKey, $results);
 
         return $results;
     }
@@ -232,6 +238,44 @@ class AppServiceAction
         $cacheKey = "ly:pb:app:" . $appName . ':' . $appEnv;
 
         Cache::store('file')->delete($cacheKey);
-        Cache::store('redis')->delete($cacheKey);
+        self::getPublicRedis()->del($cacheKey);
+    }
+
+    /**
+     * 设置redis缓存数据
+     *
+     * @param string $cacheKey
+     * @param array $result
+     */
+    private static function setRedisCache($cacheKey, array $result)
+    {
+        self::getPublicRedis()->set($cacheKey, json_encode($result));
+    }
+
+    /**
+     * 获取公共redis缓存数据
+     *
+     * @param string $cacheKey
+     * @return mixed|null
+     */
+    private static function getRedisCache($cacheKey)
+    {
+        $result = self::getPublicRedis()->get($cacheKey);
+
+        return is_null($result) ? null : json_decode($result, true);
+    }
+
+    /**
+     * 获取公共redis对象
+     *
+     * @return \Illuminate\Redis\Connections\Connection
+     */
+    private static function getPublicRedis()
+    {
+        if (is_null(self::$publicRedis)) {
+            self::$publicRedis = Redis::connection('publicRedis');
+        }
+
+        return self::$publicRedis;
     }
 }
