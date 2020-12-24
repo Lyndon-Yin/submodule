@@ -9,11 +9,44 @@
 
 5，composer require firebase/php-jwt ^5.2
 
+6，需要更改/config/database.php文件，redis中添加publicRedis公共redis配置信息
+
 ## 跨服务接口调用
 
 依赖curl/curl三方库
 
-首先在/config/database.php文件connections中添加public-mysql公共数据库配置信息
+首先在/config/database.php文件connections中添加public-mysql公共数据库配置信息，且redis中添加publicRedis公共redis配置信息
+```php
+// 公共数据库配置
+'public-mysql' => [
+    'driver' => 'mysql',
+    'url' => env('DATABASE_PUBLIC_URL'),
+    'host' => env('DB_PUBLIC_HOST', '127.0.0.1'),
+    'port' => env('DB_PUBLIC_PORT', '3306'),
+    'database' => env('DB_PUBLIC_DATABASE', 'forge'),
+    'username' => env('DB_PUBLIC_USERNAME', 'forge'),
+    'password' => env('DB_PUBLIC_PASSWORD', ''),
+    'unix_socket' => env('DB_PUBLIC_SOCKET', ''),
+    'charset' => 'utf8mb4',
+    'collation' => 'utf8mb4_unicode_ci',
+    'prefix' => 'pb_',
+    'prefix_indexes' => true,
+    'strict' => true,
+    'engine' => null,
+    'options' => extension_loaded('pdo_mysql') ? array_filter([
+        PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+    ]) : [],
+],
+
+// 公共redis
+'publicRedis' => [
+    'url'      => env('REDIS_PUBLIC_URL'),
+    'host'     => env('REDIS_PUBLIC_HOST', '127.0.0.1'),
+    'password' => env('REDIS_PUBLIC_PASSWORD', null),
+    'port'     => env('REDIS_PUBLIC_PORT', '6379'),
+    'database' => env('REDIS_PUBLIC_DB', '1'),
+],
+```
 
 使用方法：  
 1，创建一个继承\Lyndon\CurlApi\BaseCurlApi的类，例如GoodsApi  
