@@ -35,34 +35,12 @@ abstract class BaseCurlApi
     private $headers = [];
 
     /**
-     * 当前对象实例
-     *
-     * @var null
-     */
-    private static $instance = null;
-
-    /**
      * BaseCurlApi constructor.
      * @throws \Exception
      */
-    private function __construct()
+    protected function __construct()
     {
         $this->initArriveAppInfo();
-    }
-
-    /**
-     * 获取当前对象
-     *
-     * @return null
-     * @throws \Exception
-     */
-    public static function getInstance()
-    {
-        if (is_null(self::$instance)) {
-            self::$instance = new static();
-        }
-
-        return self::$instance;
     }
 
     /**
