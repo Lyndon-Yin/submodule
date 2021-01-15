@@ -346,7 +346,7 @@ namespace App\Criteria;
 use Lyndon\Repository\Contracts\CriteriaInterface;
 use Lyndon\Repository\Contracts\RepositoryInterface;
 
-class UserCriteria extend CriteriaInterface
+class UserCriteria implements CriteriaInterface
 {
     public function apply($model, RepositoryInterface $repository)
     {

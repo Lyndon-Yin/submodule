@@ -35,12 +35,10 @@ class RequestCriteria implements CriteriaInterface
 
     /**
      * RequestCriteria constructor
-     *
-     * @param Request $request
      */
-    public function __construct(Request $request)
+    public function __construct()
     {
-        $this->request = $request;
+        $this->request = \request();
     }
 
     /**

@@ -4,6 +4,7 @@ namespace Lyndon\CurlApi;
 
 use Curl\Curl;
 use Lyndon\Logger\Log;
+use Lyndon\Constant\CodeType;
 use Lyndon\PublicDB\Actions\AppServiceAction;
 use Psr\SimpleCache\InvalidArgumentException;
 
@@ -118,12 +119,21 @@ abstract class BaseCurlApi
         }
 
         $response = json_decode($result->response, true);
-        return [
-            'status'  => $response['status'],
-            'code'    => $response['code'],
-            'message' => $response['message'],
-            'data'    => $response['data']
-        ];
+        if (is_null($response)) {
+            return [
+                'status'  => false,
+                'code'    => CodeType::ERROR_RETURN,
+                'message' => '远程调用失败',
+                'data'    => [$result->response]
+            ];
+        } else {
+            return [
+                'status'  => $response['status'],
+                'code'    => $response['code'],
+                'message' => $response['message'],
+                'data'    => $response['data']
+            ];
+        }
     }
 
     /**
