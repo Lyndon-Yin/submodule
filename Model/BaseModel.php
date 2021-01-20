@@ -2,9 +2,9 @@
 namespace Lyndon\Model;
 
 
-use Illuminate\Database\Eloquent\Model;
 use Lyndon\Constant\CodeType;
 use Lyndon\Exceptions\ModelException;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Class BaseModel
@@ -152,7 +152,7 @@ class BaseModel extends Model
     /**
      * 获取多行数据
      *
-     * @param mixed $primaryKeys
+     * @param array $primaryKeys
      * @param array $extraWhere
      * @param string $trashed -- onlyTrashed / withTrashed
      * @return array
@@ -187,9 +187,40 @@ class BaseModel extends Model
     }
 
     /**
+     * 验证多行数据存在性
+     *
+     * @param array $primaryKeys
+     * @param array $extraWhere
+     * @param string $trashed -- onlyTrashed / withTrashed
+     * @return array
+     */
+    public function existsListByPrimaryKeys($primaryKeys, $extraWhere = [], $trashed = '')
+    {
+        $result = [];
+
+        $primaryKeys = array_chunk($primaryKeys, $this->maxItemNumForWhereIn);
+
+        foreach ($primaryKeys as $chunk) {
+            $temp = $this
+                ->whereIn($this->primaryKey, $chunk)
+                ->when(! empty($extraWhere), function ($query) use ($extraWhere) {
+                    return $query->where($extraWhere);
+                })
+                ->when(! empty($trashed), function ($query) use ($trashed) {
+                    return $query->$trashed();
+                })
+                ->pluck($this->primaryKey)->toArray();
+
+            $result = array_merge($result, $temp);
+        }
+
+        return $result;
+    }
+
+    /**
      * 删除多条数据
      *
-     * @param mixed $primaryKeys
+     * @param array $primaryKeys
      * @param array $extraWhere
      * @param string $deleteMethod
      * @return bool

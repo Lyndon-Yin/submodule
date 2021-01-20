@@ -130,6 +130,21 @@ trait RepositoryMethodsTrait
     }
 
     /**
+     * 验证多行数据存在性
+     *
+     * @param array $primaryKeys
+     * @param array $extraWhere
+     * @param string $trashed
+     * @return array
+     */
+    public function existsRepoListByPrimaryKeys($primaryKeys, $extraWhere = [], $trashed = '')
+    {
+        $extraWhere = array_merge($this->scopeQuery, $extraWhere);
+
+        return $this->model->existsListByPrimaryKeys($primaryKeys, $extraWhere, $trashed);
+    }
+
+    /**
      * 删除多条数据
      *
      * @param array $primaryKeys
