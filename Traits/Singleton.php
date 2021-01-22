@@ -18,8 +18,7 @@ trait Singleton
      * 获取当前对象
      *
      * @param mixed ...$args
-     * @return null
-     * @throws \Exception
+     * @return Singleton
      */
     public static function getInstance(...$args)
     {
