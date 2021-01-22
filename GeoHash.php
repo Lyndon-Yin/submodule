@@ -31,13 +31,14 @@ class GeoHash
     }
 
     /**
-     * 8位geohash编码
+     * geoHash编码
      *
      * @param mixed $lng
      * @param mixed $lat
+     * @param int $hashLength
      * @return string
      */
-    public function encode($lng, $lat)
+    public function encode($lng, $lat, int $hashLength = 8)
     {
         // 经纬度范围验证
         $lng = floatval($lng);
@@ -48,9 +49,13 @@ class GeoHash
         if ($lat > $this->maxLat || $lat < $this->minLat) {
             return '';
         }
+        // hash值长度验证
+        if ($hashLength > 10 || $hashLength < 1) {
+            return '';
+        }
 
         // 经纬度解析成二进制数组
-        $bitsArray = $this->coordinateToBitsArray($lng, $lat);
+        $bitsArray = $this->coordinateToBitsArray($lng, $lat, $hashLength);
 
         // 二进制数字转换为32进制数
         return $this->bitsArrayToGeoHash($bitsArray);
@@ -72,7 +77,7 @@ class GeoHash
             return $result;
         }
 
-        // geoHash 32位转二进制
+        // geoHash 32进制转二进制
         try {
             $bitsString = $this->geoHashToBitsString($geoHash);
         } catch (\Exception $e) {
@@ -171,9 +176,10 @@ class GeoHash
      *
      * @param mixed $lng
      * @param mixed $lat
+     * @param int $hashLength
      * @return array
      */
-    public function coordinateToBitsArray($lng, $lat)
+    public function coordinateToBitsArray($lng, $lat, $hashLength)
     {
         $bitsArray = [];
 
@@ -184,7 +190,8 @@ class GeoHash
         $belowLat = $this->minLat;
         $aboveLat = $this->maxLat;
 
-        for ($i = 0; $i < 20; $i++) {
+        $bitsLength = ceil($hashLength / 2) * 5;
+        for ($i = 0; $i < $bitsLength; $i++) {
             // 经度$lng解析
             $medianLng = ($leftLng + $rightLng) / 2;
             if ($lng > $medianLng) {
@@ -206,6 +213,11 @@ class GeoHash
             }
         }
 
-        return $bitsArray;
+        // 按照实际长度进行截取返回
+        if ($hashLength % 2 == 0) {
+            return $bitsArray;
+        } else {
+            return array_slice($bitsArray, 0, $hashLength * 5);
+        }
     }
 }
