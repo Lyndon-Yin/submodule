@@ -55,7 +55,7 @@ class BaseModel extends Model
                     $data[$column] = $this->castDefaultColumn($cast);
                 }
             } else {
-                $data[$column] = trim($param[$column]);
+                $data[$column] = is_object($param[$column]) ? $param[$column] : trim($param[$column]);
             }
         }
 
@@ -83,7 +83,7 @@ class BaseModel extends Model
 
         foreach ($this->tableColumn as $column => $cast) {
             if (isset($param[$column])) {
-                $data[$column] = trim($param[$column]);
+                $data[$column] = is_object($param[$column]) ? $param[$column] : trim($param[$column]);
             }
         }
 
