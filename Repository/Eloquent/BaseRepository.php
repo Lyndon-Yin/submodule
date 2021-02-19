@@ -37,6 +37,20 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     protected $fieldSearchable = [];
 
     /**
+     * 默认查询字段（前端传参则覆盖）
+     *
+     * @var array
+     */
+    protected $defaultSearch = [];
+
+    /**
+     * 默认查询字段搜索条件（前端传参则覆盖）
+     *
+     * @var array
+     */
+    protected $defaultSearchFields = [];
+
+    /**
      * 标准查询字段别名
      *
      * @var array
@@ -212,6 +226,52 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     public function getFieldsSearchable()
     {
         return $this->fieldSearchable;
+    }
+
+    /**
+     * 获取默认查询字段
+     *
+     * @return array
+     */
+    public function getDefaultSearch()
+    {
+        return $this->defaultSearch;
+    }
+
+    /**
+     * 推入默认查询字段
+     *
+     * @param array $param
+     * @return $this
+     */
+    public function pushDefaultSearch(array $param)
+    {
+        $this->defaultSearch = $param;
+
+        return $this;
+    }
+
+    /**
+     * 获取默认查询字段搜索条件
+     *
+     * @return array
+     */
+    public function getDefaultSearchFields()
+    {
+        return $this->defaultSearchFields;
+    }
+
+    /**
+     * 推入默认查询字段搜索条件
+     *
+     * @param array $param
+     * @return $this
+     */
+    public function pushDefaultSearchFields(array $param)
+    {
+        $this->defaultSearchFields = $param;
+
+        return $this;
     }
 
     /**

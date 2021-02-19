@@ -15,6 +15,20 @@ interface RepositoryInterface
     public function getFieldsSearchable();
 
     /**
+     * 获取默认查询字段
+     *
+     * @return array
+     */
+    public function getDefaultSearch();
+
+    /**
+     * 获取默认查询字段搜索条件
+     *
+     * @return array
+     */
+    public function getDefaultSearchFields();
+
+    /**
      * 获取可搜索字段的别名
      * key是别名，value是fieldSearchable属性元素
      *

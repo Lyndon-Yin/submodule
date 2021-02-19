@@ -66,15 +66,16 @@ class RequestCriteria implements CriteriaInterface
     protected function addWhere()
     {
         $fieldsSearchable = $this->repository->getFieldsSearchable();
+        $defaultSearch = $this->repository->getDefaultSearch();
 
         $search       = $this->request->get('search', null);
         $searchFields = $this->request->get('searchFields', null);
         $searchJoin   = $this->request->get('searchJoin', null);
 
-        if (! empty($search) && is_array($fieldsSearchable) && ! empty($fieldsSearchable)) {
+        if ((! empty($search) || ! empty($defaultSearch)) && is_array($fieldsSearchable) && ! empty($fieldsSearchable)) {
             $fieldsSearchable = format_fields_searchable($fieldsSearchable);
 
-            $search       = $this->parserSearchData($search, $fieldsSearchable);
+            $search       = $this->parserSearchData($search, $defaultSearch, $fieldsSearchable);
             $searchFields = $this->parserSearchFields($searchFields, $fieldsSearchable);
 
             $modelForceAndWhere = strtolower($searchJoin) !== 'or';
@@ -294,10 +295,11 @@ class RequestCriteria implements CriteriaInterface
      * ]
      *
      * @param mixed $search
+     * @param array $defaultSearch
      * @param array $fieldsSearchable
      * @return array
      */
-    protected function parserSearchData($search, array $fieldsSearchable = [])
+    protected function parserSearchData($search, array $defaultSearch, array $fieldsSearchable = [])
     {
         $result = [];
 
@@ -311,6 +313,16 @@ class RequestCriteria implements CriteriaInterface
         foreach ($search as $field => $value) {
             if (isset($aliasFieldSearchable[$field])) {
                 $field = trim($aliasFieldSearchable[$field]);
+            }
+
+            if (isset($fieldsSearchable[$field])) {
+                $result[$field] = $value;
+            }
+        }
+        foreach ($defaultSearch as $field => $value) {
+            // 已经存在前端传参则不再使用默认查询
+            if (isset($result[$field])) {
+                continue;
             }
 
             if (isset($fieldsSearchable[$field])) {
@@ -344,6 +356,8 @@ class RequestCriteria implements CriteriaInterface
 
         // 搜索字段别名映射
         $aliasFieldSearchable = $this->repository->getAliasFieldsSearchable();
+        // 二次默认搜索条件（在某些情况下对默认搜索条件的再次重写）
+        $defaultSearchFields = $this->repository->getDefaultSearchFields();
 
         // 用户自定义的搜索条件替换默认搜索条件
         if (! empty($searchFields)) {
@@ -372,7 +386,15 @@ class RequestCriteria implements CriteriaInterface
                 }
                 if (isset($fieldsSearchable[$field_parts[0]])) {
                     $fieldsSearchable[$field_parts[0]] = strtolower($field_parts[1]);
+
+                    // 存在前端传参，则失效掉二次默认搜索条件
+                    unset($defaultSearchFields[$field_parts[0]]);
                 }
+            }
+        }
+        foreach ($defaultSearchFields as $field => $value) {
+            if (isset($fieldsSearchable[$field])) {
+                $fieldsSearchable[$field] = $value;
             }
         }
 
