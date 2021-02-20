@@ -178,7 +178,7 @@ class BaseModel extends Model
             // 根据主键传入顺序排列输出
             foreach ($chunk as $primaryKey) {
                 if (isset($temp[$primaryKey])) {
-                    $result[] = $temp[$primaryKey];
+                    $result[$primaryKey] = $temp[$primaryKey];
                 }
             }
         }

@@ -4,6 +4,7 @@ namespace Lyndon\Repository\Eloquent;
 
 use Lyndon\Model\BaseModel;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
@@ -20,6 +21,20 @@ trait RepositoryMethodsTrait
      * @var array
      */
     protected $scopeQuery = [];
+
+    /**
+     * 是否应用缓存服务
+     *
+     * @var bool
+     */
+    protected $applyCache = false;
+
+    /**
+     * 缓存过期时间，默认10天
+     *
+     * @var int
+     */
+    protected $cacheExpire = 864000;
 
     /**
      * 追加全局范围查询
@@ -81,7 +96,16 @@ trait RepositoryMethodsTrait
     {
         $extraWhere = array_merge($this->scopeQuery, $extraWhere);
 
-        return $this->model->editRow($primaryKey, $param, $extraWhere);
+        // 数据库编辑
+        $info = $this->model->editRow($primaryKey, $param, $extraWhere);
+
+        // 缓存数据删除
+        if ($this->applyCache) {
+            $this->forgetRepoRowCache($this->getRepoCacheKey($primaryKey));
+            $this->forgetRepoRowCache($this->getTrashedRepoCacheKey($primaryKey));
+        }
+
+        return $info;
     }
 
     /**
@@ -96,7 +120,44 @@ trait RepositoryMethodsTrait
     {
         $extraWhere = array_merge($this->scopeQuery, $extraWhere);
 
-        return $this->model->getRowByPrimaryKey($primaryKey, $extraWhere, $trashed);
+        // 不应用缓存，直接查询数据库并返回结果
+        if (! $this->applyCache) {
+            return $this->model->getRowByPrimaryKey($primaryKey, $extraWhere, $trashed);
+        }
+
+        if (empty($trashed)) {
+            $cacheKey = $this->getRepoCacheKey($primaryKey);
+
+            // 获取缓存数据
+            $info = $this->getRepoRowCache($cacheKey);
+
+            if (is_null($info)) {
+                // 无缓存数据，数据库获取
+                $info = $this->model->getRowByPrimaryKey($primaryKey);
+                // 查询结果存入缓存
+                $this->putRepoRowCache($cacheKey, $info);
+            }
+
+            return $this->filterRepoRowCache($info, $extraWhere);
+        } else {
+            $cacheKey = $this->getTrashedRepoCacheKey($primaryKey);
+
+            // 获取缓存数据
+            $info = $this->getRepoRowCache($cacheKey);
+
+            if (is_null($info)) {
+                // 无缓存数据，数据库获取
+                $info = $this->model->getRowByPrimaryKey($primaryKey, [], 'withTrashed');
+                // 查询结果存入缓存
+                $this->putRepoRowCache($cacheKey, $info);
+            }
+
+            if ($trashed == 'onlyTrashed' && empty($info['deleted_at'])) {
+                return [];
+            }
+
+            return $this->filterRepoRowCache($info, $extraWhere);
+        }
     }
 
     /**
@@ -126,7 +187,76 @@ trait RepositoryMethodsTrait
     {
         $extraWhere = array_merge($this->scopeQuery, $extraWhere);
 
-        return $this->model->getListByPrimaryKeys($primaryKeys, $extraWhere, $trashed);
+        // 不应用缓存，直接查询数据库并返回结果
+        if (! $this->applyCache) {
+            $results = $this->model->getListByPrimaryKeys($primaryKeys, $extraWhere, $trashed);
+
+            return array_values($results);
+        }
+
+        $results = [];
+        if (empty($trashed)) {
+            // 缓存中获取数据，不在缓存中的主键分离出来
+            $queryPrimaryKeys = [];
+            foreach ($primaryKeys as $val) {
+                $tmp = $this->getRepoRowCache($this->getRepoCacheKey($val));
+
+                if (is_null($tmp)) {
+                    $queryPrimaryKeys[] = $val;
+
+                    $results[$val] = [];
+                } elseif (! empty($tmp)) {
+                    $results[$val] = $tmp;
+                }
+            }
+
+            // 未在缓存中的主键，查询数据库
+            $tmp = $this->model->getListByPrimaryKeys($queryPrimaryKeys);
+            foreach ($queryPrimaryKeys as $val) {
+                if (isset($tmp[$val])) {
+                    $results[$val] = $tmp[$val];
+                    $this->putRepoRowCache($this->getRepoCacheKey($val), $tmp[$val]);
+                } else {
+                    $this->putRepoRowCache($this->getRepoCacheKey($val), []);
+                }
+            }
+            unset($tmp, $queryPrimaryKeys);
+
+            $results = array_filter(array_values($results));
+        } else {
+            // 缓存中获取数据，不在缓存中的主键分离出来
+            $queryPrimaryKeys = [];
+            foreach ($primaryKeys as $val) {
+                $tmp = $this->getRepoRowCache($this->getTrashedRepoCacheKey($val));
+
+                if (is_null($tmp)) {
+                    $queryPrimaryKeys[] = $val;
+
+                    $results[$val] = [];
+                } elseif (! empty($tmp)) {
+                    $results[$val] = $tmp;
+                }
+            }
+
+            // 未在缓存中的主键，查询数据库
+            $tmp = $this->model->getListByPrimaryKeys($queryPrimaryKeys, [], 'withTrashed');
+            foreach ($queryPrimaryKeys as $val) {
+                if (isset($tmp[$val])) {
+                    $results[$val] = $tmp[$val];
+                    $this->putRepoRowCache($this->getTrashedRepoCacheKey($val), $tmp[$val]);
+                } else {
+                    $this->putRepoRowCache($this->getTrashedRepoCacheKey($val), []);
+                }
+            }
+            unset($tmp, $queryPrimaryKeys);
+
+            $results = array_filter(array_values($results));
+            if ($trashed == 'onlyTrashed') {
+                $results = collect($results)->whereNotNull('deleted_at')->toArray();
+            }
+        }
+
+        return $this->filterRepoListCache($results, $extraWhere);
     }
 
     /**
@@ -156,7 +286,18 @@ trait RepositoryMethodsTrait
     {
         $extraWhere = array_merge($this->scopeQuery, $extraWhere);
 
-        return $this->model->destroyByPrimaryKeys($primaryKeys, $extraWhere, $deleteMethod);
+        // 删除数据库
+        $result = $this->model->destroyByPrimaryKeys($primaryKeys, $extraWhere, $deleteMethod);
+
+        // 删除缓存，$extraWhere不为空存在多删的情况
+        if ($this->applyCache) {
+            foreach ($primaryKeys as $val) {
+                $this->forgetRepoRowCache($this->getRepoCacheKey($val));
+                $this->forgetRepoRowCache($this->getTrashedRepoCacheKey($val));
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -192,5 +333,123 @@ trait RepositoryMethodsTrait
         $result = $result->appends(request()->input())->toArray();
 
         return $result;
+    }
+
+    /**
+     * 获取缓存数据行
+     *
+     * @param string $cacheKey
+     * @return array|null
+     */
+    protected function getRepoRowCache($cacheKey)
+    {
+        return Cache::get($cacheKey, null);
+    }
+
+    /**
+     * 存储缓存数据行
+     *
+     * @param string $cacheKey
+     * @param $data
+     */
+    protected function putRepoRowCache($cacheKey, $data)
+    {
+        Cache::put($cacheKey, $data, $this->cacheExpire);
+    }
+
+    /**
+     * 删除缓存数据行
+     *
+     * @param string $cacheKey
+     */
+    protected function forgetRepoRowCache($cacheKey)
+    {
+        Cache::forget($cacheKey);
+    }
+
+    /**
+     * 过滤缓存获取的数据行
+     *
+     * @param array $data
+     * @param array $extraWhere
+     * @return array
+     */
+    protected function filterRepoRowCache(array $data, array $extraWhere = [])
+    {
+        if (empty($extraWhere) || empty($data)) {
+            return $data;
+        }
+
+        // 存在额外筛选条件，集合筛选
+        $data = collect([$data]);
+        foreach ($extraWhere as $key => $val) {
+            if (is_array($val)) {
+                $data = $data->where(array_shift($val), array_shift($val), array_shift($val));
+            } else {
+                $data = $data->where($key, $val);
+            }
+        }
+
+        return $data->first();
+    }
+
+    /**
+     * 过滤缓存获取的数据列表
+     *
+     * @param array $data
+     * @param array $extraWhere
+     * @return array|\Illuminate\Support\Collection
+     */
+    protected function filterRepoListCache(array $data, array $extraWhere = [])
+    {
+        if (empty($extraWhere) || empty($data)) {
+            return $data;
+        }
+
+        // 存在额外筛选条件，集合筛选
+        $data = collect($data);
+        foreach ($extraWhere as $key => $val) {
+            if (is_array($val)) {
+                $data = $data->where(array_shift($val), array_shift($val), array_shift($val));
+            } else {
+                $data = $data->where($key, $val);
+            }
+        }
+
+        return $data->toArray();
+    }
+
+    /**
+     * 获取缓存key值
+     *
+     * @param mixed $primaryKey
+     * @return string
+     */
+    protected function getRepoCacheKey($primaryKey)
+    {
+        static $redisKeyArray = [];
+
+        if (empty($redisKeyArray[$primaryKey])) {
+            $redisKeyArray[$primaryKey] = ':cache-repo:' . $this->model->getTable() . ':' . $primaryKey;
+        }
+
+        return $redisKeyArray[$primaryKey];
+    }
+
+    /**
+     * 获取trashed缓存key值
+     *
+     * @param mixed $primaryKey
+     * @return string
+     */
+    protected function getTrashedRepoCacheKey($primaryKey)
+    {
+        static $trashedKeyArray = [];
+
+        if (empty($trashedKeyArray[$primaryKey])) {
+            $trashedKeyArray[$primaryKey] = $this->getRepoCacheKey($primaryKey) . ':trashed';
+        }
+
+        return $trashedKeyArray[$primaryKey];
     }
 }
