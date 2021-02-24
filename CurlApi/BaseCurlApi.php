@@ -22,6 +22,13 @@ abstract class BaseCurlApi
     protected $arriveName = '';
 
     /**
+     * 自定义header头列表
+     *
+     * @var array
+     */
+    protected $diyHeaders = [];
+
+    /**
      * 访问应用的信息列表
      *
      * @var array
@@ -102,6 +109,9 @@ abstract class BaseCurlApi
         $curl = new Curl();
         // 设置头信息
         foreach ($this->headers as $key => $val) {
+            $curl->setHeader($key, $val);
+        }
+        foreach ($this->diyHeaders as $key => $val) {
             $curl->setHeader($key, $val);
         }
 
