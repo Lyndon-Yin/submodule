@@ -118,18 +118,25 @@ abstract class BaseCurlApi
         $result = $curl->$method($url, $data);
 
         if ($curl->error_code) {
-            Log::filename('BaseCurlApi')->error('BaseCurlApi', [
+            Log::filename('BaseCurlApi')->error('BaseCurlApi@curl', [
                 'msg'    => $curl->error_message,
                 'url'    => $url,
                 'data'   => $data,
                 'method' => $method,
-                'header' => $this->headers
+                'header' => array_merge($this->headers, $this->diyHeaders)
             ]);
             return error_return('协助异常：' . $curl->error_message, $curl->error_code);
         }
 
         $response = json_decode($result->response, true);
         if (is_null($response)) {
+            Log::filename('BaseCurlApi')->error('BaseCurlApi@curl', [
+                'url'    => $url,
+                'header' => array_merge($this->headers, $this->diyHeaders),
+                'data'   => $data,
+                'result' => $result->response
+            ]);
+
             return [
                 'status'  => false,
                 'code'    => CodeType::ERROR_RETURN,
