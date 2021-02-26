@@ -4,7 +4,6 @@ namespace Lyndon\Repository\Eloquent;
 
 use Lyndon\Model\BaseModel;
 use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
@@ -15,6 +14,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
  */
 trait RepositoryMethodsTrait
 {
+    use RepositoryCacheTrait;
+
     /**
      * 全局范围查询
      *
@@ -333,123 +334,5 @@ trait RepositoryMethodsTrait
         $result = $result->appends(request()->input())->toArray();
 
         return $result;
-    }
-
-    /**
-     * 获取缓存数据行
-     *
-     * @param string $cacheKey
-     * @return array|null
-     */
-    protected function getRepoRowCache($cacheKey)
-    {
-        return Cache::get($cacheKey, null);
-    }
-
-    /**
-     * 存储缓存数据行
-     *
-     * @param string $cacheKey
-     * @param $data
-     */
-    protected function putRepoRowCache($cacheKey, $data)
-    {
-        Cache::put($cacheKey, $data, $this->cacheExpire);
-    }
-
-    /**
-     * 删除缓存数据行
-     *
-     * @param string $cacheKey
-     */
-    protected function forgetRepoRowCache($cacheKey)
-    {
-        Cache::forget($cacheKey);
-    }
-
-    /**
-     * 过滤缓存获取的数据行
-     *
-     * @param array $data
-     * @param array $extraWhere
-     * @return array
-     */
-    protected function filterRepoRowCache(array $data, array $extraWhere = [])
-    {
-        if (empty($extraWhere) || empty($data)) {
-            return $data;
-        }
-
-        // 存在额外筛选条件，集合筛选
-        $data = collect([$data]);
-        foreach ($extraWhere as $key => $val) {
-            if (is_array($val)) {
-                $data = $data->where(array_shift($val), array_shift($val), array_shift($val));
-            } else {
-                $data = $data->where($key, $val);
-            }
-        }
-
-        return $data->first();
-    }
-
-    /**
-     * 过滤缓存获取的数据列表
-     *
-     * @param array $data
-     * @param array $extraWhere
-     * @return array|\Illuminate\Support\Collection
-     */
-    protected function filterRepoListCache(array $data, array $extraWhere = [])
-    {
-        if (empty($extraWhere) || empty($data)) {
-            return $data;
-        }
-
-        // 存在额外筛选条件，集合筛选
-        $data = collect($data);
-        foreach ($extraWhere as $key => $val) {
-            if (is_array($val)) {
-                $data = $data->where(array_shift($val), array_shift($val), array_shift($val));
-            } else {
-                $data = $data->where($key, $val);
-            }
-        }
-
-        return $data->toArray();
-    }
-
-    /**
-     * 获取缓存key值
-     *
-     * @param mixed $primaryKey
-     * @return string
-     */
-    protected function getRepoCacheKey($primaryKey)
-    {
-        static $redisKeyArray = [];
-
-        if (empty($redisKeyArray[$primaryKey])) {
-            $redisKeyArray[$primaryKey] = ':cache-repo:' . $this->model->getTable() . ':' . $primaryKey;
-        }
-
-        return $redisKeyArray[$primaryKey];
-    }
-
-    /**
-     * 获取trashed缓存key值
-     *
-     * @param mixed $primaryKey
-     * @return string
-     */
-    protected function getTrashedRepoCacheKey($primaryKey)
-    {
-        static $trashedKeyArray = [];
-
-        if (empty($trashedKeyArray[$primaryKey])) {
-            $trashedKeyArray[$primaryKey] = $this->getRepoCacheKey($primaryKey) . ':trashed';
-        }
-
-        return $trashedKeyArray[$primaryKey];
     }
 }
