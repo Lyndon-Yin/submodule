@@ -102,13 +102,7 @@ trait RepositoryCacheTrait
      */
     private function getRepoCacheKey($primaryKey)
     {
-        static $redisKeyArray = [];
-
-        if (empty($redisKeyArray[$primaryKey])) {
-            $redisKeyArray[$primaryKey] = ':cache-repo:' . $this->model->getTable() . ':' . $primaryKey;
-        }
-
-        return $redisKeyArray[$primaryKey];
+        return ':cache-repo:' . $this->model->getTable() . ':' . $primaryKey;
     }
 
     /**
@@ -119,12 +113,6 @@ trait RepositoryCacheTrait
      */
     private function getTrashedRepoCacheKey($primaryKey)
     {
-        static $trashedKeyArray = [];
-
-        if (empty($trashedKeyArray[$primaryKey])) {
-            $trashedKeyArray[$primaryKey] = $this->getRepoCacheKey($primaryKey) . ':trashed';
-        }
-
-        return $trashedKeyArray[$primaryKey];
+        return $this->getRepoCacheKey($primaryKey) . ':trashed';
     }
 }
