@@ -242,6 +242,16 @@ class BaseModel extends Model
     }
 
     /**
+     * 获取数据表主键名称
+     *
+     * @return string
+     */
+    public function getPrimaryKeyField()
+    {
+        return $this->primaryKey;
+    }
+
+    /**
      * 过滤掉不需要传参的表字段
      */
     private function filterTableColumn()

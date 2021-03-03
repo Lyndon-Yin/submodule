@@ -302,6 +302,36 @@ trait RepositoryMethodsTrait
     }
 
     /**
+     * 根据用户传参获取主键列表
+     *
+     * @param int $maxLimit
+     * @param string $trashed
+     * @return mixed
+     */
+    public function getAllIdsByCriteria($maxLimit = 1000, $trashed = '')
+    {
+        $primaryKey = $this->model->getPrimaryKeyField();
+
+        // repository应用范围查询和标准查询
+        $this->applyScopeQuery()->applyCriteria();
+
+        // 数据查询
+        $result = $this->model
+            ->when($maxLimit > 0, function ($query) use ($maxLimit) {
+                return $query->limit($maxLimit);
+            })
+            ->when(! empty($trashed), function ($query) use ($trashed) {
+                return $query->$trashed();
+            })
+            ->pluck($primaryKey)->toArray();
+
+        // 重置模型
+        $this->resetModel();
+
+        return $result;
+    }
+
+    /**
      * 自定义分页，在获取所有主键ID之后进行的分页
      *
      * @param array $allDataList
