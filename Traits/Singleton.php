@@ -18,7 +18,7 @@ trait Singleton
      * 获取当前对象
      *
      * @param mixed ...$args
-     * @return Singleton
+     * @return Singleton|static
      */
     public static function getInstance(...$args)
     {

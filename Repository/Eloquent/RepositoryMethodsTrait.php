@@ -4,6 +4,7 @@ namespace Lyndon\Repository\Eloquent;
 
 use Lyndon\Model\BaseModel;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
@@ -310,7 +311,11 @@ trait RepositoryMethodsTrait
      */
     public function getAllIdsByCriteria($maxLimit = 1000, $trashed = '')
     {
-        $primaryKey = $this->model->getPrimaryKeyField();
+        if ($this->model instanceof Builder) {
+            $primaryKey = $this->model->getModel()->getKeyName();
+        } else {
+            $primaryKey = $this->model->getKeyName();
+        }
 
         // repository应用范围查询和标准查询
         $this->applyScopeQuery()->applyCriteria();
